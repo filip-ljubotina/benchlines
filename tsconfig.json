@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "esModuleInterop": true,
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "sourceMap": true,
+    "outDir": "dist",
+    "pretty": true,
+    "downlevelIteration": true,
+    "moduleResolution": "node",
+    "types": ["@webgpu/types", "node"],
+    "paths": {
+      "three/webgpu": ["./node_modules/three/build/three.webgpu.js"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
