@@ -34,6 +34,9 @@ export function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
   lines = new Line2(lineGeometry, lineMaterial);
   scene.add(lines);
 
+  // Initial render with data
+  redrawWebGLLinesThreeJS(dataset, parcoords);
+
   return renderer;
 }
 
