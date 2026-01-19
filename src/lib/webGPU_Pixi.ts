@@ -165,9 +165,16 @@ function onHoveredLinesChange(
 ) {
   if (selectionMode === "hover") {
     hoveredLineIds.clear();
-    hoveredIds.forEach((id) => hoveredLineIds.add(id));
-    if (hoveredIds.length > 0) {
-      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+    // Only add active lines to hovered set
+    hoveredIds.forEach((id) => {
+      const isActive = lineState[id]?.active ?? true;
+      if (isActive) {
+        hoveredLineIds.add(id);
+      }
+    });
+    if (hoveredLineIds.size > 0) {
+      const firstHoveredId = Array.from(hoveredLineIds)[0];
+      const data = dataset.find((d) => getLineNameCanvas(d) === firstHoveredId);
       if (data) {
         showDataPointLabels(currentParcoords, data);
       }
@@ -176,7 +183,13 @@ function onHoveredLinesChange(
     }
   } else {
     selectedLineIds.clear();
-    hoveredIds.forEach((id) => selectedLineIds.add(id));
+    // Only add active lines to selection
+    hoveredIds.forEach((id) => {
+      const isActive = lineState[id]?.active ?? true;
+      if (isActive) {
+        selectedLineIds.add(id);
+      }
+    });
   }
   updateLineStyles();
   if (renderer && stage) {
@@ -187,7 +200,13 @@ function onHoveredLinesChange(
 function onCanvasClick(event: MouseEvent) {
   if (event.shiftKey) {
     if (hoveredLineIds.size > 0) {
-      hoveredLineIds.forEach((id) => selectedLineIds.add(id));
+      // Only add active lines to selection
+      hoveredLineIds.forEach((id) => {
+        const isActive = lineState[id]?.active ?? true;
+        if (isActive) {
+          selectedLineIds.add(id);
+        }
+      });
     }
   } else if (drawState.wasDrawing === false) {
     // Regular click: clear selected
