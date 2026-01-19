@@ -7,6 +7,11 @@ import {
   parcoords,
 } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
+import {
+  clearDataPointLabels,
+  createLabelsContainer,
+  showDataPointLabels,
+} from "./labelUtils";
 // the backgrounds are generated using webgl
 import {
   initLineTextureWebGL,
@@ -66,6 +71,15 @@ function onHoveredLinesChange(
         hoveredLineIds.add(id);
       }
     });
+    if (hoveredLineIds.size > 0) {
+      const firstActiveHoveredId = Array.from(hoveredLineIds)[0];
+      const data = dataset.find((d) => getLineNameCanvas(d) === firstActiveHoveredId);
+      if (data) {
+        showDataPointLabels(parcoords, data);
+      }
+    } else {
+      clearDataPointLabels();
+    }
   } else {
     selectedLineIds.clear();
     // hoveredIds.forEach((id) => selectedLineIds.add(id));
@@ -170,6 +184,9 @@ export async function initCanvas2D(
   overlayCanvasEl = createOverlayCanvas();
   overlayCtx = overlayCanvasEl.getContext("2d")!;
   overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // 2D only
+
+  // Create labels container
+  createLabelsContainer();
 
   //create background lines image
   inactiveLinesCanvas = document.createElement("canvas");
