@@ -1,6 +1,6 @@
 # BenchLines
 
-BenchLines is an open-source JavaScript library which implements a steerable parallel coordinates visualisation. The visualisation has built-in interactive controls as well as an API which allows the visualisation to be controlle (steered) externally. 
+BenchLines is an open-source JavaScript library which implements a steerable parallel coordinates visualisation. The visualisation has built-in interactive controls as well as an API which allows the visualisation to be controlled (steered) externally. 
 
 <!-- The library is written in TypeScript and is based on [D3](https://d3js.org/). -->
 
