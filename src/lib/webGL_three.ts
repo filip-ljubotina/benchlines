@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { getLineNameCanvas } from "./brush";
 import { canvasEl, drawState, lineState, parcoords } from "./globals";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
@@ -11,18 +11,126 @@ import {
   showDataPointLabels,
 } from "./labelUtils";
 
-let scene: THREE.Scene;
-let camera: THREE.OrthographicCamera;
-let renderer: THREE.WebGLRenderer;
-let lines: Line2; 
-let lineMaterial: LineMaterial;
-let lineGeometry: LineSegmentsGeometry;
-
-// Hover and selection state
+let scene: THREE.Scene | null = null;
+let camera: THREE.OrthographicCamera | null = null;
+let renderer: THREE.WebGLRenderer | null = null;
+let lineObjects: Map<string, Line2> = new Map();
+let lineDataMap: Map<Line2, any> = new Map();
+let lineMaterial: LineMaterial | null = null;
+let inactiveLineMaterial: LineMaterial | null = null;
+let hoverLineMaterial: LineMaterial | null = null;
+let selectedLineMaterial: LineMaterial | null = null;
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
 let dataset: any[] = [];
+let isInitialized = false;
 let currentParcoords: any = null;
+
+export function disposeWebGLThreeJS() {
+  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
+  plotArea.removeEventListener("click", onCanvasClick);
+  clearDataPointLabels();
+  for (const [_, line] of lineObjects) {
+    if (scene) scene.remove(line);
+    line.geometry.dispose();
+  }
+  lineObjects.clear();
+  lineDataMap.clear();
+  lineMaterial?.dispose();
+  inactiveLineMaterial?.dispose();
+  hoverLineMaterial?.dispose();
+  selectedLineMaterial?.dispose();
+  lineMaterial = null;
+  inactiveLineMaterial = null;
+  hoverLineMaterial = null;
+  selectedLineMaterial = null;
+  if (renderer) {
+    renderer.dispose();
+    renderer = null;
+  }
+  if (scene) {
+    scene.clear();
+    scene = null;
+  }
+  camera = null;
+  hoveredLineIds.clear();
+  selectedLineIds.clear();
+  dataset = [];
+  currentParcoords = null;
+  isInitialized = false;
+}
+
+export async function initCanvasWebGLThreeJS(
+  _dataset?: any[],
+  _parcoords?: any
+) {
+  disposeWebGLThreeJS();
+  const width = canvasEl.clientWidth;
+  const height = canvasEl.clientHeight;
+
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(0, width, height, 0, -1, 1);
+
+  renderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+  lineMaterial = new LineMaterial({
+    color: 0x80bfd6,
+    linewidth: 3,
+    vertexColors: false,
+  });
+  lineMaterial.resolution.set(width, height);
+
+  inactiveLineMaterial = new LineMaterial({
+    color: 0xebebeb,
+    linewidth: 2,
+    vertexColors: false,
+  });
+  inactiveLineMaterial.resolution.set(width, height);
+
+  hoverLineMaterial = new LineMaterial({
+    color: 0xff3333,
+    linewidth: 4,
+    vertexColors: false,
+  });
+  hoverLineMaterial.resolution.set(width, height);
+
+  selectedLineMaterial = new LineMaterial({
+    color: 0xff8000,
+    linewidth: 4,
+    vertexColors: false,
+  });
+  selectedLineMaterial.resolution.set(width, height);
+
+  createLabelsContainer();
+  await initHoverDetection(parcoords, onHoveredLinesChange);
+  setupCanvasClickHandling();
+  isInitialized = true;
+
+  return renderer;
+}
+
+function updateLineMaterials() {
+  for (const [id, line] of lineObjects) {
+    const isHovered = hoveredLineIds.has(id);
+    const isSelected = selectedLineIds.has(id);
+    const active = lineState[id]?.active ?? true;
+    let material: LineMaterial;
+    let renderOrder = 0;
+    if (isSelected) {
+      material = selectedLineMaterial!;
+      renderOrder = 2;
+    } else if (isHovered) {
+      material = hoverLineMaterial!;
+      renderOrder = 1;
+    } else {
+      material = active ? lineMaterial! : inactiveLineMaterial!;
+    }
+    line.material = material;
+    line.renderOrder = renderOrder;
+  }
+}
 
 function onHoveredLinesChange(
   hoveredIds: string[],
@@ -35,8 +143,9 @@ function onHoveredLinesChange(
         hoveredLineIds.add(id);
       }
     });
-    if (hoveredIds.length > 0) {
-      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+    if (hoveredLineIds.size > 0) {
+      const firstActiveHoveredId = Array.from(hoveredLineIds)[0];
+      const data = dataset.find((d) => getLineNameCanvas(d) === firstActiveHoveredId);
       if (data) {
         showDataPointLabels(currentParcoords, data);
       }
@@ -51,7 +160,10 @@ function onHoveredLinesChange(
       }
     });
   }
-  redrawWebGLLinesThreeJS(dataset, currentParcoords);
+  updateLineMaterials();
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
 function onCanvasClick(event: MouseEvent) {
@@ -66,7 +178,10 @@ function onCanvasClick(event: MouseEvent) {
   } else {
     drawState.wasDrawing = false;
   }
-  redrawWebGLLinesThreeJS(dataset, currentParcoords);
+  updateLineMaterials();
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
 function setupCanvasClickHandling() {
@@ -74,113 +189,57 @@ function setupCanvasClickHandling() {
   plotArea.addEventListener("click", onCanvasClick);
 }
 
-export async function initCanvasWebGLThreeJS(dataset: any[], parcoords: any) {
-  const width = canvasEl.clientWidth;
+function getPolylinePoints(d: any, parcoords: any): number[] {
+  const pts: number[] = [];
   const height = canvasEl.clientHeight;
-
-  scene = new THREE.Scene();
-  camera = new THREE.OrthographicCamera(0, width, height, 0, -1, 1);
-
-  renderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true });
-  renderer.setSize(width, height);
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
-
-  lineGeometry = new LineSegmentsGeometry();
-  lineMaterial = new LineMaterial({
-    color: 0x80bfd6,
-    linewidth: 2,
-    vertexColors: true,
+  parcoords.newFeatures.forEach((name: string) => {
+    const x = parcoords.dragging[name] ?? parcoords.xScales(name);
+    const y = height - parcoords.yScales[name](d[name]);
+    pts.push(x, y, 0);
   });
-  lineMaterial.resolution.set(width, height);
-
-  lines = new Line2(lineGeometry, lineMaterial);
-  scene.add(lines);
-
-  // Initialize hover detection and click handling
-  await initHoverDetection(parcoords, onHoveredLinesChange);
-  setupCanvasClickHandling();
-  createLabelsContainer();
-  currentParcoords = parcoords;
-
-  return renderer;
+  return pts;
 }
 
 export function redrawWebGLLinesThreeJS(newDataset: any[], parcoords: any) {
-  if (!renderer || !scene || !lines) return;
-
-  // Store dataset for hover use
+  if (!renderer || !scene || !isInitialized) {
+    console.warn("WebGL-Three not initialized, skipping redraw");
+    return;
+  }
   dataset = newDataset;
   currentParcoords = parcoords;
-
-  const height = canvasEl.clientHeight;
-
-  let totalSegments = 0;
-  for (const d of dataset) {
+  const usedIds = new Set<string>();
+  dataset.forEach((d, index) => {
     const id = getLineNameCanvas(d);
-    const active = lineState[id]?.active ?? true;
-    if (!active) continue;
-    const n = parcoords.newFeatures.length;
-    if (n >= 2) totalSegments += n - 1;
-  }
-
-  const positions = new Float32Array(totalSegments * 2 * 3);
-  const colors = new Float32Array(totalSegments * 2 * 3);
-
-  let offset = 0;
-  for (const d of dataset) {
-    const id = getLineNameCanvas(d);
-    const active = lineState[id]?.active ?? true;
-    if (!active) continue; // skip inactive lines like webGL.ts
-    const isHovered = hoveredLineIds.has(id);
-    const isSelected = selectedLineIds.has(id);
-
-    let color: [number, number, number];
-    if (isSelected) {
-      color = [1, 0.502, 0]; // Orange for selected
-    } else if (isHovered) {
-      color = [1, 0, 0]; // Red for hovered
+    usedIds.add(id);
+    const pts = getPolylinePoints(d, parcoords);
+    let line = lineObjects.get(id);
+    if (!line) {
+      const geometry = new LineGeometry();
+      geometry.setPositions(pts);
+      line = new Line2(geometry, lineMaterial!); // Initial material, will be updated below
+      line.computeLineDistances();
+      lineObjects.set(id, line);
+      lineDataMap.set(line, d);
+      scene.add(line);
     } else {
-      color = [0.5, 0.75, 0.84]; // Blue for active
+      const geometry = line.geometry as LineGeometry;
+      geometry.setPositions(pts);
+      line.computeLineDistances();
+      lineDataMap.set(line, d);
     }
-
-    // Compute polyline points
-    const pts: [number, number, number][] = parcoords.newFeatures.map((name: string) => {
-      const x = parcoords.dragging[name] ?? parcoords.xScales(name);
-      const y = height - parcoords.yScales[name](d[name]);
-      return [x, y, 0];
-    });
-    if (pts.length < 2) continue;
-
-    for (let i = 0; i < pts.length - 1; i++) {
-      // Vertex 1
-      positions.set(pts[i], offset);
-      colors.set(color, offset);
-      offset += 3;
-
-      // Vertex 2
-      positions.set(pts[i + 1], offset);
-      colors.set(color, offset);
-      offset += 3;
+  });
+  for (const [id, line] of lineObjects) {
+    if (!usedIds.has(id)) {
+      scene.remove(line);
+      line.geometry.dispose();
+      lineDataMap.delete(line);
+      lineObjects.delete(id);
     }
   }
-
-  lineGeometry.setPositions(positions);
-  lineGeometry.setColors(colors);
-  lineMaterial.needsUpdate = true;
-
-  renderer.render(scene, camera);
+  updateLineMaterials();
+  renderer.render(scene, camera!);
 }
 
 export function getSelectedIds(): Set<string> {
   return selectedLineIds;
-}
-
-export function disposeWebGLThreeJS() {
-  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
-  plotArea.removeEventListener("click", onCanvasClick);
-  clearDataPointLabels();
-  hoveredLineIds.clear();
-  selectedLineIds.clear();
-  dataset = [];
-  currentParcoords = null;
 }

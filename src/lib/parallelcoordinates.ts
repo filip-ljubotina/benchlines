@@ -14,7 +14,7 @@ import {
   redrawWebGLBackgroundLines,
 } from "./webGL";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
+import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS, destroyPixiRenderer, initHoverDetectionPixiJS } from "./webGL_pixi";
 import {
   initCanvasWebGPU,
   redrawWebGPUBackgroundLines,
@@ -49,6 +49,7 @@ import {
   setPadding,
   setPaddingXaxis,
   setRefreshData,
+  resetLineState,
   setSvg,
   setWidth,
   setXScales,
@@ -510,9 +511,6 @@ export function redrawPolylines(dataset: any[], parcoords: any) {
     case "Three WebGPU":
       redrawWebGPULinesThreeJS(dataset, parcoords);
       break;
-    // case "WebGPU-Orillusion":
-    //   redrawWebGPULinesOrillusion(dataset, parcoords);
-    //   break;
     case "Pixi WebGPU":
       redrawWebGPUPixiLines(dataset, parcoords);
       break;
@@ -633,6 +631,7 @@ export async function runPolylineBenchmark(
 
 export function drawChart(content: any[]): void {
   // console.log("Triggered  ");
+  resetLineState();
   setRefreshData(structuredClone(content));
   deleteChart();
 
@@ -738,6 +737,7 @@ export function drawChart(content: any[]): void {
       initCanvasWebGLPixiJS()
         .then(() => {
           redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
+          return initHoverDetectionPixiJS(parcoords);
         })
         .catch((err) => console.error("WebGLPixi init failed:", err));
       break;
@@ -796,6 +796,7 @@ export function refresh(): void {
 
 export function deleteChart(): void {
   // console.log("Triggered deleteChart");
+  destroyPixiRenderer();
   const wrapper = select("#parallelcoords");
   wrapper.selectAll("*").remove();
   select("#pc_svg").remove();

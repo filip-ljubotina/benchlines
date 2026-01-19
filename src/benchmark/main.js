@@ -212,6 +212,7 @@ function updateDimensions(dimension) {
 
 function closeElements(id) {
   let options = document.getElementById(id);
+  if (!options) return;
   options.style.display = "none";
 }
 
@@ -484,6 +485,9 @@ function generateDropdownForMove() {
 }
 
 function calcDDBehaviour(dimensionContainer, selectButton) {
+  if (!dimensionContainer || !selectButton || typeof selectButton.getBoundingClientRect !== "function") {
+    return;
+  }
   const dropdownHeight = dimensionContainer.clientHeight;
   const windowHeight = window.innerHeight;
   const dropdownTop = selectButton.getBoundingClientRect().top;
@@ -499,6 +503,18 @@ function calcDDBehaviour(dimensionContainer, selectButton) {
 
 function getDatasetPath(dataset) {
   return `data/dataset_${dataset}.csv`;
+}
+
+async function extensiveWebGPUSupportCheck() {
+  try {
+    if (!("gpu" in navigator)) {
+      return false;
+    }
+    const adapter = await navigator.gpu.requestAdapter();
+    return !!adapter;
+  } catch (_) {
+    return false;
+  }
 }
 
 export function generateDropDownForDataset() {
@@ -539,17 +555,17 @@ export function generateDropDownForDataset() {
   container.appendChild(select);
 }
 
-export function generateDropDownForHoverTech() {
+export async function generateDropDownForHoverTech() {
   const container = document.getElementById("hoverTechContainer");
   if (!container) return;
 
   container.innerHTML = "";
 
-  // Check GPU availability directly
-  const gpuAvailable = "gpu" in navigator;
+  // Check GPU availability using a robust helper
+  const gpuAvailable = await extensiveWebGPUSupportCheck();
 
   // If GPU not available, force JS
-  if (!gpuAvailable && getHoverTechHelper() === "GPU") {
+  if (!gpuAvailable && getHoverTechHelper() === "WebGPU") {
     setHoverTechHelper("JS");
   }
 
@@ -567,15 +583,15 @@ export function generateDropDownForHoverTech() {
     select.title = "GPU not available - using JS fallback";
   }
 
-  ["GPU", "JS"].forEach(function(value) {
+  ["WebGPU", "JS"].forEach(function(value) {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = value;
 
     // Disable GPU option if not available
-    if (value === "GPU" && !gpuAvailable) {
+    if (value === "WebGPU" && !gpuAvailable) {
       option.disabled = true;
-      option.textContent = "GPU (unavailable)";
+      option.textContent = "WebGPU (unavailable)";
     }
 
     if (value === getHoverTechHelper()) option.selected = true;
@@ -588,7 +604,7 @@ export function generateDropDownForHoverTech() {
 
     const datasetSelect = document.querySelector("#datasetContainer select");
 
-    if (datasetSelect.value !== "student_dataset") {
+    if (datasetSelect && datasetSelect.value !== "student_dataset") {
       const path = getDatasetPath(datasetSelect.value);
       const res = await fetch(path);
       const text = await res.text();

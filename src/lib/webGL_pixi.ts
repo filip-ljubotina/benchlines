@@ -1,12 +1,12 @@
 import { getLineNameCanvas } from "./brush";
-import { canvasEl, drawState, lineState, parcoords } from "./globals";
+import { canvasEl, lineState, drawState } from "./globals";
+import * as PIXI from "pixi.js-legacy";
 import { initHoverDetection, SelectionMode } from "./hover/hover";
 import {
   clearDataPointLabels,
   createLabelsContainer,
   showDataPointLabels,
 } from "./labelUtils";
-import * as PIXI from "pixi.js-legacy";
 
 let renderer: PIXI.Renderer | null = null;  // WebGL renderer
 let stage: PIXI.Container | null = null;
@@ -18,68 +18,46 @@ let ptsMap: Map<string, [number, number][]> = new Map();
 let hoveredLineIds: Set<string> = new Set();
 let selectedLineIds: Set<string> = new Set();
 let dataset: any[] = [];
-let isInitialized = false;
 let currentParcoords: any = null;
 
 interface LineStyle {
   color: number;
   width: number;
   alpha: number;
-  zIndex: number;
 }
 
 const activeStyle: LineStyle = {
-  color: 0x80bfd6,
-  width: 3,
-  alpha: 1,
-  zIndex: 0,
+  color: 0x0081af,
+  width: 2,
+  alpha: 0.5,
 };
 const inactiveStyle: LineStyle = {
-  color: 0x80bfd6,
-  width: 2,
-  alpha: 1,
-  zIndex: 0,
+  color: 0xd3d3d3,
+  width: 1,
+  alpha: 0.4,
 };
 const hoverStyle: LineStyle = {
   color: 0xff3333,
-  width: 4,
+  width: 3,
   alpha: 1,
-  zIndex: 1,
 };
 const selectedStyle: LineStyle = {
   color: 0xff8000, // orange
-  width: 4,
+  width: 3,
   alpha: 1,
-  zIndex: 2,
 };
 
-export function disposeWebGLPixi() {
-  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
-  plotArea.removeEventListener("click", onCanvasClick);
-  clearDataPointLabels();
-  if (linesContainer) {
-    linesContainer.removeChildren();
-  }
-  for (const [_, graphics] of lineGraphics) {
-    graphics.destroy();
-  }
-  lineGraphics.clear();
-  lineDataMap.clear();
-  ptsMap.clear();
-  if (stage) {
-    stage.destroy(true);
-    stage = null;
-  }
-  if (renderer) {
-    renderer.destroy();
-    renderer = null;
-  }
-  linesContainer = null;
-  hoveredLineIds.clear();
-  selectedLineIds.clear();
-  dataset = [];
-  currentParcoords = null;
-  isInitialized = false;
+function getPolylinePoints(d: any, parcoords: any): [number, number][] {
+  const pts: [number, number][] = [];
+  parcoords.newFeatures.forEach((name: string) => {
+    const x =
+      parcoords.dragging[name] !== undefined
+        ? parcoords.dragging[name]
+        : parcoords.xScales(name);
+    const y = parcoords.yScales[name](d[name]);
+    pts.push([x, y]);
+  });
+  return pts;
 }
 
 function getLineStyle(id: string): LineStyle {
@@ -101,14 +79,13 @@ function drawLine(
   style: LineStyle
 ) {
   graphics.clear();
+  graphics.lineStyle(style.width, style.color, style.alpha);
   if (pts.length > 0) {
-    graphics.lineStyle(style.width, style.color, style.alpha);
     graphics.moveTo(pts[0][0], pts[0][1]);
     for (let i = 1; i < pts.length; i++) {
       graphics.lineTo(pts[i][0], pts[i][1]);
     }
   }
-  graphics.zIndex = style.zIndex;
 }
 
 function updateLineStyles() {
@@ -119,9 +96,6 @@ function updateLineStyles() {
       drawLine(graphics, pts, style);
     }
   }
-  if (linesContainer) {
-    linesContainer.sortChildren();
-  }
 }
 
 function onHoveredLinesChange(
@@ -130,9 +104,16 @@ function onHoveredLinesChange(
 ) {
   if (selectionMode === "hover") {
     hoveredLineIds.clear();
-    hoveredIds.forEach((id) => hoveredLineIds.add(id));
-    if (hoveredIds.length > 0) {
-      const data = dataset.find((d) => getLineNameCanvas(d) === hoveredIds[0]);
+    // Only add active lines to hovered set
+    hoveredIds.forEach((id) => {
+      const isActive = lineState[id]?.active ?? true;
+      if (isActive) {
+        hoveredLineIds.add(id);
+      }
+    });
+    if (hoveredLineIds.size > 0) {
+      const firstHoveredId = Array.from(hoveredLineIds)[0];
+      const data = dataset.find((d) => getLineNameCanvas(d) === firstHoveredId);
       if (data) {
         showDataPointLabels(currentParcoords, data);
       }
@@ -141,7 +122,13 @@ function onHoveredLinesChange(
     }
   } else {
     selectedLineIds.clear();
-    hoveredIds.forEach((id) => selectedLineIds.add(id));
+    // Only add active lines to selection
+    hoveredIds.forEach((id) => {
+      const isActive = lineState[id]?.active ?? true;
+      if (isActive) {
+        selectedLineIds.add(id);
+      }
+    });
   }
   updateLineStyles();
   if (renderer && stage) {
@@ -152,7 +139,13 @@ function onHoveredLinesChange(
 function onCanvasClick(event: MouseEvent) {
   if (event.shiftKey) {
     if (hoveredLineIds.size > 0) {
-      hoveredLineIds.forEach((id) => selectedLineIds.add(id));
+      // Only add active lines to selection
+      hoveredLineIds.forEach((id) => {
+        const isActive = lineState[id]?.active ?? true;
+        if (isActive) {
+          selectedLineIds.add(id);
+        }
+      });
     }
   } else if (drawState.wasDrawing === false) {
     // Regular click: clear selected
@@ -171,31 +164,20 @@ function setupCanvasClickHandling() {
   plotArea.addEventListener("click", onCanvasClick);
 }
 
-function getPolylinePoints(d: any, parcoords: any): [number, number][] {
-  const pts: [number, number][] = [];
-  parcoords.newFeatures.forEach((name: string) => {
-    const x =
-      parcoords.dragging[name] !== undefined
-        ? parcoords.dragging[name]
-        : parcoords.xScales(name);
-    const y = parcoords.yScales[name](d[name]);
-    pts.push([x, y]);
-  });
-  return pts;
-}
+export function redrawWebGLLinesPixiJS(dataset_: any[], parcoords: any) {
+  if (!renderer || !stage || !linesContainer || !dataset_) return;
 
-export function redrawWebGLLinesPixiJS(newDataset: any[], parcoords: any) {
-  if (!renderer || !stage || !linesContainer || !isInitialized) {
-    console.warn("WebGL-Pixi not initialized, skipping redraw");
-    return;
-  }
-  dataset = newDataset;
+  dataset = dataset_;
   currentParcoords = parcoords;
+
   const usedIds = new Set<string>();
-  dataset.forEach((d, index) => {
+
+  for (const d of dataset) {
     const id = getLineNameCanvas(d);
     usedIds.add(id);
     const pts = getPolylinePoints(d, parcoords);
+    ptsMap.set(id, pts);
+
     let graphics = lineGraphics.get(id);
     if (!graphics) {
       graphics = new PIXI.Graphics();
@@ -205,54 +187,75 @@ export function redrawWebGLLinesPixiJS(newDataset: any[], parcoords: any) {
     } else {
       lineDataMap.set(graphics, d);
     }
-    ptsMap.set(id, pts);
-  });
+  }
+
+  // Remove graphics for lines no longer in dataset
   for (const [id, graphics] of lineGraphics) {
     if (!usedIds.has(id)) {
       linesContainer.removeChild(graphics);
-      graphics.destroy();
       lineDataMap.delete(graphics);
       lineGraphics.delete(id);
       ptsMap.delete(id);
     }
   }
+
   updateLineStyles();
-  if (linesContainer) {
-    linesContainer.sortChildren();
-  }
   renderer.render(stage);
 }
 
 export async function initCanvasWebGLPixiJS() {
-  disposeWebGLPixi();
-  const dpr = window.devicePixelRatio || 1;
-  renderer = new PIXI.Renderer({
-    view: canvasEl,
-    width: canvasEl.width / dpr,
-    height: canvasEl.height / dpr,
-    resolution: dpr,
-    backgroundAlpha: 0,
-    autoDensity: true,
-    clearBeforeRender: true,
+  return Promise.resolve().then(async () => {
+    const dpr = window.devicePixelRatio || 1;
+    renderer = new PIXI.Renderer({
+      view: canvasEl,
+      width: canvasEl.width / dpr,
+      height: canvasEl.height / dpr,
+      resolution: dpr,
+      backgroundAlpha: 0,
+      autoDensity: true,
+      clearBeforeRender: true,
+    });
+
+    stage = new PIXI.Container();
+    linesContainer = new PIXI.Container();
+    stage.addChild(linesContainer);
+
+    createLabelsContainer();
+    
+    return renderer;
   });
-
-  stage = new PIXI.Container();
-  linesContainer = new PIXI.Container();
-  linesContainer.sortableChildren = true;
-  stage.addChild(linesContainer);
-
-  createLabelsContainer();
-  await initHoverDetection(parcoords, onHoveredLinesChange);
-  setupCanvasClickHandling();
-  isInitialized = true;
-
-  return renderer;
 }
 
 export function destroyPixiRenderer() {
-  disposeWebGLPixi();
+  const plotArea = document.getElementById("plotArea") as HTMLDivElement;
+  if (plotArea) {
+    plotArea.removeEventListener("click", onCanvasClick);
+  }
+  clearDataPointLabels();
+  if (renderer) {
+    renderer.destroy(true); // destroy WebGL resources
+    renderer = null;
+  }
+  if (stage) {
+    stage.destroy({ children: true });
+    stage = null;
+  }
+  linesContainer = null;
+  lineGraphics.clear();
+  lineDataMap.clear();
+  ptsMap.clear();
+  hoveredLineIds.clear();
+  selectedLineIds.clear();
+  dataset = [];
+  currentParcoords = null;
 }
 
 export function getSelectedIds(): Set<string> {
   return selectedLineIds;
+}
+
+export function initHoverDetectionPixiJS(parcoords: any) {
+  return initHoverDetection(parcoords, onHoveredLinesChange).then(() => {
+    setupCanvasClickHandling();
+  });
 }
