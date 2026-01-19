@@ -14,7 +14,7 @@ import {
   redrawWebGLBackgroundLines,
 } from "./webGL";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS } from "./webGL_pixi";
+import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS, destroyPixiRenderer, initHoverDetectionPixiJS } from "./webGL_pixi";
 import {
   initCanvasWebGPU,
   redrawWebGPUBackgroundLines,
@@ -738,6 +738,7 @@ export function drawChart(content: any[]): void {
       initCanvasWebGLPixiJS()
         .then(() => {
           redrawWebGLLinesPixiJS(parcoords.newDataset, parcoords);
+          return initHoverDetectionPixiJS(parcoords);
         })
         .catch((err) => console.error("WebGLPixi init failed:", err));
       break;
@@ -796,6 +797,7 @@ export function refresh(): void {
 
 export function deleteChart(): void {
   // console.log("Triggered deleteChart");
+  destroyPixiRenderer();
   const wrapper = select("#parallelcoords");
   wrapper.selectAll("*").remove();
   select("#pc_svg").remove();
