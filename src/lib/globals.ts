@@ -110,6 +110,10 @@ export function setBenchmarkData(newBenchmarkData) {
   benchmarkData = newBenchmarkData;
 }
 
+export function resetLineState(): void {
+  Object.keys(lineState).forEach((key) => delete lineState[key]);
+}
+
 export function setDataset(dataset: DatasetName) {
   currDataset = dataset;
 }

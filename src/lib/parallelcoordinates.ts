@@ -49,6 +49,7 @@ import {
   setPadding,
   setPaddingXaxis,
   setRefreshData,
+  resetLineState,
   setSvg,
   setWidth,
   setXScales,
@@ -633,6 +634,7 @@ export async function runPolylineBenchmark(
 
 export function drawChart(content: any[]): void {
   // console.log("Triggered  ");
+  resetLineState();
   setRefreshData(structuredClone(content));
   deleteChart();
 

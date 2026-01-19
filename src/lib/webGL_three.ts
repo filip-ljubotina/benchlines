@@ -60,7 +60,10 @@ export function disposeWebGLThreeJS() {
   isInitialized = false;
 }
 
-export async function initCanvasWebGLThreeJS() {
+export async function initCanvasWebGLThreeJS(
+  _dataset?: any[],
+  _parcoords?: any
+) {
   disposeWebGLThreeJS();
   const width = canvasEl.clientWidth;
   const height = canvasEl.clientHeight;
