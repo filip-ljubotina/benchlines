@@ -11,11 +11,11 @@ This project is a fork of the original [SPCD3 teaching repository](https://githu
 Our fork adapts and extends the original material for the [Information Architecture and Web Usability](https://courses.isds.tugraz.at/iaweb/) course with a focus on WebGPU/WebGL comparisons, performance exploration, and interactive data visualisation techniques.
 
 ## Project goals
-- Provide a clear overview of Canvas 2D, SVG, WebGL, and WebGPU technologies.
+- Provide a clear overview of Canvas2D, SVG-DOM, WebGL, and WebGPU technologies.
 - Compare these technologies in terms of usability, performance and modern GPU capabilities.
   
 ## Deployed version of the project 🌐
-You can access the deployed version of the project at [https://filip-ljubotina.github.io/BenchLines/](https://filip-ljubotina.github.io/BenchLines/).
+You can access the deployed version of the project at [https://filip-ljubotina.github.io/benchlines/](https://filip-ljubotina.github.io/benchlines/).
 
 
 The task runner [Gulp](https://gulpjs.com/) is used to automate
@@ -82,12 +82,11 @@ equivalent npm script defined in package.json.
 
 ## Usage
 
-As mentioned in the beginning, an example was implemented to show how
-the library works and what the parallel coordinate plot will look like
-in addition to the library.
+BenchLines is used to benchmark and visualize the performance of various 
+rendering technologies and libraries.
 
-The [API Guide](./API.md) lists all available functions in BenchLines'
-API.
+<!-- The [API Guide](./API.md) lists all available functions in BenchLines'
+API. -->
 
 An example application was built to illustrate the use of the BenchLines
 library. It is described in the [Example Application
