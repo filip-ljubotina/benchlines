@@ -14,7 +14,12 @@ import {
   redrawWebGLBackgroundLines,
 } from "./webGL";
 import { initCanvasWebGLThreeJS, redrawWebGLLinesThreeJS } from "./webGL_three";
-import { initCanvasWebGLPixiJS, redrawWebGLLinesPixiJS, destroyPixiRenderer, initHoverDetectionPixiJS } from "./webGL_pixi";
+import {
+  initCanvasWebGLPixiJS,
+  redrawWebGLLinesPixiJS,
+  destroyPixiRenderer,
+  initHoverDetectionPixiJS,
+} from "./webGL_pixi";
 import {
   initCanvasWebGPU,
   redrawWebGPUBackgroundLines,
@@ -90,20 +95,20 @@ export function invertWoTransition(dimension: string): void {
   textElement.attr("href", arrow);
   textElement.style(
     "cursor",
-    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`,
   );
 
   select("#invert_hitbox_" + cleanDimensionName).style(
     "cursor",
-    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`,
   );
 
   select(dimensionId).call(
     yAxis[dimension].scale(
       parcoords.yScales[dimension].domain(
-        parcoords.yScales[dimension].domain().reverse()
-      )
-    )
+        parcoords.yScales[dimension].domain().reverse(),
+      ),
+    ),
   );
 
   helper.trans(active).each(function (d: any) {
@@ -136,12 +141,12 @@ export function setInversionStatus(dimension: string, status: string): void {
   textElement.attr("href", arrow);
   textElement.style(
     "cursor",
-    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`,
   );
 
   select("#invert_hitbox_" + cleanDimensionName).style(
     "cursor",
-    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`
+    `url('data:image/svg+xml,${encodeURIComponent(arrowStyle)}') 8 8 , auto`,
   );
 
   select(dimensionId)
@@ -150,9 +155,9 @@ export function setInversionStatus(dimension: string, status: string): void {
     .call(
       yAxis[dimension].scale(
         parcoords.yScales[dimension].domain(
-          parcoords.yScales[dimension].domain().reverse()
-        )
-      )
+          parcoords.yScales[dimension].domain().reverse(),
+        ),
+      ),
     )
     .ease(easeCubic);
 
@@ -246,7 +251,7 @@ export function moveByOne(dimension: string, direction: string): void {
 export function move(
   dimensionA: string,
   toRightOf: boolean,
-  dimensionB: string
+  dimensionB: string,
 ): void {
   const indexOfDimensionA = api.getDimensionPosition(dimensionA);
   const indexOfDimensionB = api.getDimensionPosition(dimensionB);
@@ -410,7 +415,7 @@ export function isSelectedWithRecordId(recordId: string): boolean {
 export function getRecordWithId(recordId: string): string {
   // console.log("Triggered getRecordWithId for recordId:", recordId);
   const item = parcoords.currentPosOfDims.find(
-    (object: { recordId: string }) => object.recordId == recordId
+    (object: { recordId: string }) => object.recordId == recordId,
   );
   return item.key;
 }
@@ -447,7 +452,7 @@ function computeMargins(
     bottom = 0,
     extraLeft = 0,
     extraRight = 0,
-  } = {}
+  } = {},
 ) {
   const ctx = document.createElement("canvas").getContext("2d");
   ctx.font = font;
@@ -549,7 +554,7 @@ export function redrawBackgroundPolylines(dataset: any[], parcoords: any) {
 export async function setupTechnology(
   tech: string,
   dataset: any[],
-  parcoords: any
+  parcoords: any,
 ) {
   const dpr = window.devicePixelRatio || 1;
 
@@ -600,7 +605,7 @@ export async function setupTechnology(
 }
 
 export async function runPolylineBenchmark(
-  iters: number
+  iters: number,
 ): Promise<number | null> {
   if (!iters || iters <= 0) {
     console.warn("runPolylineBenchmark: iterations not set or <= 0");
@@ -696,6 +701,7 @@ export function drawChart(content: any[]): void {
       .style("left", "0px")
       .style("top", "0px")
       .style("display", "block")
+      .style("user-select", "none"),
   );
 
   setDefsForIcons();
@@ -862,14 +868,14 @@ function setUpParcoordData(data: any, newFeatures: []): void {
       isNaN(
         Math.max(
           ...parcoords.newDataset.map(
-            (o: { [x: string]: any }) => o[newFeatures[i]]
-          )
-        )
+            (o: { [x: string]: any }) => o[newFeatures[i]],
+          ),
+        ),
       )
     ) {
       const sorted = [
         ...parcoords.newDataset.map(
-          (o: { [x: string]: any }) => o[newFeatures[i]]
+          (o: { [x: string]: any }) => o[newFeatures[i]],
         ),
       ].sort((a, b) => a.localeCompare(b));
       min = sorted[sorted.length - 1];
@@ -877,13 +883,13 @@ function setUpParcoordData(data: any, newFeatures: []): void {
     } else {
       max = Math.max(
         ...parcoords.newDataset.map(
-          (o: { [x: string]: any }) => o[newFeatures[i]]
-        )
+          (o: { [x: string]: any }) => o[newFeatures[i]],
+        ),
       );
       min = Math.min(
         ...parcoords.newDataset.map(
-          (o: { [x: string]: any }) => o[newFeatures[i]]
-        )
+          (o: { [x: string]: any }) => o[newFeatures[i]],
+        ),
       );
     }
     const ranges = api.getDimensionRange(newFeatures[i]);
@@ -905,14 +911,14 @@ function setUpParcoordData(data: any, newFeatures: []): void {
   const hiddenDims = api.getAllHiddenDimensionNames();
 
   setYaxis(
-    helper.setupYAxis(parcoords.yScales, parcoords.newDataset, hiddenDims)
+    helper.setupYAxis(parcoords.yScales, parcoords.newDataset, hiddenDims),
   );
 
   let counter = 0;
   parcoords.features.map((x: { name: string | number }) => {
     let numberOfDigs = 0;
     let values = parcoords.newDataset.map(
-      (o: { [x: string]: any }) => o[x.name]
+      (o: { [x: string]: any }) => o[x.name],
     );
     for (let i = 0; i < values.length; i++) {
       if (!isNaN(values[i])) {
@@ -928,13 +934,13 @@ function setUpParcoordData(data: any, newFeatures: []): void {
       numberOfDigs,
       parcoords.currentPosOfDims,
       x.name,
-      "sigDig"
+      "sigDig",
     );
     utils.addNumberOfDigs(
       counter,
       parcoords.currentPosOfDims,
       x.name,
-      "recordId"
+      "recordId",
     );
     counter = counter + 1;
   });
@@ -1044,7 +1050,7 @@ function setActivePathLines(
     newFeatures: any;
     features: any[];
     newDataset: any[];
-  }
+  },
 ): any {
   // console.log("Triggered setActivePathLines")
   let contextMenu = select("#parallelcoords")
@@ -1117,7 +1123,7 @@ function setActivePathLines(
           ctrlKey: any;
           stopPropagation: () => void;
         },
-        d: any
+        d: any,
       ) {
         const data = helper.getAllPointerEventsData(event);
         const selectedRecords = getSelected();
@@ -1139,7 +1145,7 @@ function setActivePathLines(
           selectRecord(data);
         }
         event.stopPropagation();
-      }
+      },
     )
     .on("contextmenu", function (event: any, d: any) {
       setContextMenuForActiceRecords(contextMenu, event, d);
@@ -1159,13 +1165,13 @@ export function redrawSvgLines(svg: any, content: any[], parcoords: any) {
 const delay1 = 50;
 export const throttleShowValues = utils.throttle(
   helper.createToolTipForValues,
-  delay1
+  delay1,
 );
 
 function setContextMenuForActiceRecords(
   contextMenu: any,
   event: any,
-  d: any
+  d: any,
 ): void {
   // console.log("Triggered setContextMenuForActiceRecords with event:", event, "and data:", d);
   const container = document.querySelector("#parallelcoords");
@@ -1195,7 +1201,7 @@ function setContextMenuForActiceRecords(
       setSelected(d[hoverlabel]);
       event.stopPropagation();
       select("#contextmenuRecords").style("display", "none");
-    }
+    },
   );
 
   select("#unSelectRecord").on(
@@ -1204,7 +1210,7 @@ function setContextMenuForActiceRecords(
       setUnselected(d[hoverlabel]);
       event.stopPropagation();
       select("#contextmenuRecords").style("display", "none");
-    }
+    },
   );
 
   select("#toggleRecord")
@@ -1232,7 +1238,7 @@ function setContextMenuForActiceRecords(
       setUnselected(d[hoverlabel]);
       event.stopPropagation();
       select("#contextmenuRecords").style("display", "none");
-    }
+    },
   );
   selectAll(".contextmenu").style("padding", 0.35 + "rem");
   event.preventDefault();
@@ -1252,7 +1258,7 @@ function setFeatureAxis(
     newDataset: any[];
   },
   width: any,
-  padding: any
+  padding: any,
 ): void {
   let featureAxis = svg
     .selectAll("g.feature")
@@ -1262,7 +1268,7 @@ function setFeatureAxis(
     .attr("class", "dimensions")
     .attr(
       "transform",
-      (d: { name: any }) => "translate(" + parcoords.xScales(d.name) + ")"
+      (d: { name: any }) => "translate(" + parcoords.xScales(d.name) + ")",
     );
 
   let tooltipValuesLabel = select("body")
@@ -1333,7 +1339,7 @@ function setFeatureAxis(
     svg,
     parcoords,
     tooltipValuesTop,
-    tooltipValuesDown
+    tooltipValuesDown,
   );
 
   setMarker(featureAxis);
@@ -1410,7 +1416,7 @@ let currentlyHighlightedItems = [];
 
 function highlight(data: any[]) {
   const cleanedItems = data.map((item: string) =>
-    utils.cleanString(item).replace(/[.,]/g, "")
+    utils.cleanString(item).replace(/[.,]/g, ""),
   );
 
   currentlyHighlightedItems = [...cleanedItems];
@@ -1487,8 +1493,8 @@ function setInvertIcon(featureAxis: any, padding: number): void {
           "cursor",
           `url('data:image/svg+xml,${utils.setSize(
             encodeURIComponent(icon.getArrowDownCursor()),
-            12
-          )}') 8 8, auto`
+            12,
+          )}') 8 8, auto`,
         );
     });
 
@@ -1508,8 +1514,8 @@ function setInvertIcon(featureAxis: any, padding: number): void {
           "cursor",
           `url('data:image/svg+xml,${utils.setSize(
             encodeURIComponent(icon.getArrowDownCursor()),
-            12
-          )}') 8 8, auto`
+            12,
+          )}') 8 8, auto`,
         );
     });
 
@@ -1554,7 +1560,7 @@ function setRectToDrag(
     newDataset: any[];
   },
   tooltipValuesTop: any,
-  tooltipValuesDown: any
+  tooltipValuesDown: any,
 ): void {
   let delta: any;
   featureAxis.each(function (d: { name: string }) {
@@ -1582,7 +1588,7 @@ function setRectToDrag(
                 delta,
                 tooltipValuesTop,
                 tooltipValuesDown,
-                window
+                window,
               );
             } else {
               brush.dragAndBrush(
@@ -1592,7 +1598,7 @@ function setRectToDrag(
                 delta,
                 tooltipValuesTop,
                 tooltipValuesDown,
-                window
+                window,
               );
             }
           })
@@ -1603,7 +1609,7 @@ function setRectToDrag(
           .on("end", () => {
             tooltipValuesTop.style("visibility", "hidden");
             tooltipValuesDown.style("visibility", "hidden");
-          })
+          }),
       );
   });
 }
@@ -1621,7 +1627,7 @@ function setBrushUp(
     newDataset: any[];
   },
   tooltipValues: any,
-  brushOverlay: any
+  brushOverlay: any,
 ): void {
   featureAxis.each(function (d: { name: string }) {
     const processedDimensionName = utils.cleanString(d.name);
@@ -1646,8 +1652,8 @@ function setBrushUp(
         "cursor",
         `url('data:image/svg+xml,${utils.setSize(
           encodeURIComponent(icon.getArrowTopCursor()),
-          13
-        )}') 8 8, auto`
+          13,
+        )}') 8 8, auto`,
       );
 
     const hit = g
@@ -1667,8 +1673,8 @@ function setBrushUp(
         "cursor",
         `url('data:image/svg+xml,${utils.setSize(
           encodeURIComponent(icon.getArrowTopCursor()),
-          13
-        )}') 8 8, auto`
+          13,
+        )}') 8 8, auto`,
       );
 
     function cleanup() {
@@ -1693,7 +1699,7 @@ function setBrushUp(
               event,
               dd,
               tooltipValues,
-              window
+              window,
             );
           } else {
             brush.brushUp(
@@ -1701,7 +1707,7 @@ function setBrushUp(
               event,
               dd,
               tooltipValues,
-              window
+              window,
             );
           }
 
@@ -1738,7 +1744,7 @@ function setBrushDown(
     newDataset: any[];
   },
   tooltipValues: any,
-  brushOverlay: any
+  brushOverlay: any,
 ): void {
   featureAxis.each(function (d: { name: string }) {
     const processedDimensionName = utils.cleanString(d.name);
@@ -1763,8 +1769,8 @@ function setBrushDown(
         "cursor",
         `url('data:image/svg+xml,${utils.setSize(
           encodeURIComponent(icon.getArrowBottomCursor()),
-          13
-        )}') 8 8, auto`
+          13,
+        )}') 8 8, auto`,
       );
 
     const hit = g
@@ -1784,8 +1790,8 @@ function setBrushDown(
         "cursor",
         `url('data:image/svg+xml,${utils.setSize(
           encodeURIComponent(icon.getArrowBottomCursor()),
-          13
-        )}') 8 8, auto`
+          13,
+        )}') 8 8, auto`,
       );
 
     function cleanup() {
@@ -1810,7 +1816,7 @@ function setBrushDown(
               event,
               dd,
               tooltipValues,
-              window
+              window,
             );
           } else {
             brush.brushDown(
@@ -1818,7 +1824,7 @@ function setBrushDown(
               event,
               dd,
               tooltipValues,
-              window
+              window,
             );
           }
 
