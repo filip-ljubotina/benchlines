@@ -7,7 +7,6 @@
 
   <!-- Plugins -->
   <script type="module" src="./lib/spcd3.js"></script>
-  <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js"></script>
   <script type="module" src="./main.js"></script>
 
   <link rel="shortcut icon" href="#"/>
@@ -26,15 +25,6 @@
 
 
 <div id="top-controls">
-<input type="file" id="fileInput" style="display: none"/>
-<button class="input-button" id="input" title="Upload a CSV File" hidden>Upload File...</button>
-<button class="input-button" id="download" title="Download Plot as SVG" hidden>Download SVG...</button>
-<button class="input-button" id="resetRanges" title="Set Ranges from Data" hidden>Set Ranges from Data</button>
-<button class="input-button" id="resetRoundedRanges" title="Set Ranges to Round Range" hidden>Round Ranges from Data</button>
-<button class="input-button" id="resetAll" title="Reset Plot to Initial State" hidden>Reset</button>
-
-
-
 <div class="control-row top-row">
   <div id="webTechContainer"></div>     
   <div id="hoverTechContainer"></div>   
@@ -97,15 +87,6 @@
     </thead>
     <tbody></tbody>
   </table>
-</div>
-<div id="bottom-controls">
-  <div id="hideDimensionContainer" class="item1" hidden></div>
-  <div id="invDimensionContainer" class="item2" hidden></div>
-  <div id="moDimensionContainer" class="item3" hidden></div>
-  <div id="filtDimensionContainer" class="item4" hidden></div>
-  <div id="ranDimensionContainer" class="item5" hidden></div>
-  <div id="selRecordsContainer" class="item6" hidden></div>
-  
 </div>
 </body>
 
